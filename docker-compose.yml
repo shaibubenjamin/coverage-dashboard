@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER:     coverage_app
+      POSTGRES_PASSWORD: coverage_pass
+      POSTGRES_DB:       coverage_dashboard
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coverage_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST:        db
+      POSTGRES_USER:        coverage_app
+      POSTGRES_PASSWORD:    coverage_pass
+      POSTGRES_DB:          coverage_dashboard
+      SUPER_ADMIN_EMAIL:    admin@sarmaan.org
+      SUPER_ADMIN_PASSWORD: Sarmaan@2024!
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./static:/app/static
+      - ./PowerBI files:/app/PowerBI files
+
+volumes:
+  pgdata:

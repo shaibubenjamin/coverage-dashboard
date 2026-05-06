@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARMAAN II — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f2341 0%, #1a3a5c 50%, #0f2341 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  }
+  .logo-area {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .logo-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, #1565C0, #42A5F5);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  .logo-title {
+    font-size: 20px; font-weight: 700;
+    color: #0f2341;
+    line-height: 1.2;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 24px 0;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+  .input-wrap {
+    position: relative;
+    margin-bottom: 18px;
+  }
+  .input-wrap i {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 16px;
+  }
+  input[type=email], input[type=password] {
+    width: 100%;
+    padding: 11px 12px 11px 38px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus { border-color: #2563eb; }
+  .btn-login {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #1565C0, #2196F3);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-login:hover { opacity: .9; }
+  .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+  .error-msg {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    color: #dc2626;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .footer-note {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .spinning { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="logo-area">
+    <div class="logo-icon"><i class="bi bi-shield-plus-fill"></i></div>
+    <div class="logo-title">SARMAAN II</div>
+    <div class="logo-sub">Coverage Evaluation — Sokoto State<br>Safety and Antimicrobial Resistance of Mass Administration<br>of Azithromycin in Children 1–59 Months</div>
+  </div>
+  <hr class="divider">
+  <div class="error-msg" id="errorMsg"></div>
+  <form id="loginForm" onsubmit="doLogin(event)">
+    <label for="email">Email Address</label>
+    <div class="input-wrap">
+      <i class="bi bi-envelope"></i>
+      <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+    </div>
+    <label for="password">Password</label>
+    <div class="input-wrap">
+      <i class="bi bi-lock"></i>
+      <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn-login" id="loginBtn">
+      <i class="bi bi-box-arrow-in-right"></i>
+      Sign In
+    </button>
+  </form>
+  <div class="footer-note">eHealth Africa · SARMAAN II Field Activity</div>
+</div>
+
+<script>
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('errorMsg');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-arrow-repeat spinning"></i> Signing in…';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('user_name',    data.name || '');
+    localStorage.setItem('user_role',    data.role || '');
+
+    if (data.must_change_password) { window.location = '/set-password?first=1'; return; }
+    window.location = data.role === 'validator' ? '/validator' : '/coverage';
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Sign In';
+  }
+}
+</script>
+</body>
+</html>

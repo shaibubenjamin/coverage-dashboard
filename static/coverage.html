@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARMAAN II Coverage Evaluation — Sokoto State</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/css/coverage.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon"><i class="bi bi-shield-plus-fill"></i></div>
+      <div>
+        <div class="brand-name">SARMAAN II</div>
+        <div class="brand-sub">Sokoto Coverage Eval.</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-link active" data-tab="demographics">
+        <i class="bi bi-bar-chart-fill"></i><span>Demographics</span>
+      </a>
+      <a class="nav-link" data-tab="completeness">
+        <i class="bi bi-check2-all"></i><span>Completeness</span>
+      </a>
+      <a class="nav-link" data-tab="quality">
+        <i class="bi bi-shield-exclamation"></i><span>Quality Checks</span>
+      </a>
+      <a class="nav-link" data-tab="geospatial">
+        <i class="bi bi-geo-alt-fill"></i><span>Geospatial Checks</span>
+      </a>
+      <a class="nav-link" data-tab="validators">
+        <i class="bi bi-clipboard2-data-fill"></i><span>Validators</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <button class="btn-sync" id="syncBtn" onclick="syncData()">
+        <i class="bi bi-arrow-repeat" id="syncIcon"></i>
+        <span id="syncBtnLabel">Sync Data</span>
+      </button>
+      <div class="sync-info">
+        <span id="lastSyncedLabel">Not synced yet</span>
+      </div>
+      <div class="user-area">
+        <i class="bi bi-person-circle"></i>
+        <span id="userName">—</span>
+        <button class="btn-logout" onclick="logout()" title="Logout">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════ MAIN PANE ═══════════════════ -->
+  <main class="main-pane">
+
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="page-title">
+        <h1>SARMAAN II COVERAGE EVALUATION — SOKOTO STATE</h1>
+        <p>Safety and Antimicrobial Resistance of Mass Administration of Azithromycin in Children 1–59 Months</p>
+      </div>
+      <div class="page-status" id="pageStatus">
+        <span class="status-dot status-idle" id="statusDot"></span>
+        <span id="statusText">Awaiting sync</span>
+      </div>
+    </header>
+
+    <!-- Alert Banner -->
+    <div class="alert-banner" id="alertBanner" style="display:none"></div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB 1 — DEMOGRAPHICS
+    ════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane active" id="tab-demographics">
+
+      <!-- Row 1: Household Submission -->
+      <div class="section-head">
+        <div class="section-title">Household Submissions</div>
+      </div>
+      <div class="kpi-row" id="kpiRow1"></div>
+
+      <!-- Row 2: Child Coverage -->
+      <div class="section-head mt-24">
+        <div class="section-title">Child Coverage Metrics</div>
+      </div>
+      <div class="kpi-row" id="kpiRow2"></div>
+
+      <!-- Row 3: Geographic Reach -->
+      <div class="section-head mt-24">
+        <div class="section-title">Geographic Reach</div>
+      </div>
+      <div class="kpi-row" id="kpiRow3"></div>
+
+      <!-- Charts -->
+      <div class="chart-grid mt-24">
+        <div class="chart-card">
+          <div class="chart-title">Households Visited by Date
+            <small>Total consented submissions per day</small>
+          </div>
+          <div class="chart-body"><canvas id="dailyChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">LGA Coverage Progress
+            <small>Planned vs reached household visits</small>
+          </div>
+          <div class="chart-body"><canvas id="lgaChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- RA Performance Table -->
+      <div class="data-card mt-24">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-person-vcard"></i>
+            Submissions by Research Assistant
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Research Assistant</th><th>LGA</th>
+                <th>Submissions</th><th>% of Total</th>
+              </tr>
+            </thead>
+            <tbody id="raTableBody">
+              <tr><td colspan="5" class="loading-cell">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Settlement Coverage Table -->
+      <div class="data-card mt-24">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-map"></i>
+            Settlement Coverage: Planned vs Reached
+          </div>
+          <div class="data-card-actions">
+            <input type="text" id="settlementSearch" placeholder="Search…"
+                   class="search-input" oninput="filterSettlement()">
+          </div>
+        </div>
+        <div class="table-container table-container-lg">
+          <table class="data-table" id="settlementTable">
+            <thead>
+              <tr>
+                <th>LGA</th><th>Ward</th><th>Settlement / Community</th>
+                <th>Planned HH</th><th>Reached</th><th>Coverage</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="settlementTableBody">
+              <tr><td colspan="7" class="loading-cell">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CDD Visitation Pie -->
+      <div class="chart-grid half-grid mt-24">
+        <div class="chart-card">
+          <div class="chart-title">CDD Home Visitation (Q86)
+            <small>Did someone visit your home (15–20 Dec 2025) to offer drugs?</small>
+          </div>
+          <div class="chart-body chart-body-sm"><canvas id="cddPieChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">AZM Swallowed vs Not Swallowed
+            <small>Of children who were offered AZM</small>
+          </div>
+          <div class="chart-body chart-body-sm"><canvas id="azmPieChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB 2 — COMPLETENESS
+    ════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="tab-completeness">
+      <div class="section-head">
+        <div class="section-title">Data Completeness</div>
+      </div>
+
+      <div class="data-card">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-clipboard-check"></i>
+            Field Completeness (% of records with value filled)
+          </div>
+        </div>
+        <div class="completeness-bars" id="fieldCompleteness">
+          <div class="loading-cell" style="text-align:center;color:#64748b;padding:32px">Loading…</div>
+        </div>
+      </div>
+
+      <div class="data-card mt-24">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-geo"></i>
+            GPS Completeness by LGA
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>LGA</th><th>Total Records</th>
+                <th>GPS Captured</th><th>GPS Completeness</th>
+              </tr>
+            </thead>
+            <tbody id="completenessLGABody">
+              <tr><td colspan="4" class="loading-cell">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB 3 — QUALITY CHECKS
+    ════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="tab-quality">
+      <div class="section-head">
+        <div class="section-title">Data Quality Indicators</div>
+      </div>
+
+      <!-- Quality KPI Cards -->
+      <div class="kpi-row" id="qualityKPIRow"></div>
+
+      <!-- Quality Error Table -->
+      <div class="data-card mt-24">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Error Breakdown by Location &amp; Research Assistant
+          </div>
+        </div>
+        <div class="table-container table-container-lg">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>LGA</th><th>Ward</th><th>Settlement</th><th>Research Assistant</th>
+                <th>Total</th><th>Duplicates</th><th>Stacked GPS</th>
+                <th>Mock GPS</th><th>Error %</th>
+              </tr>
+            </thead>
+            <tbody id="qualityTableBody">
+              <tr><td colspan="9" class="loading-cell">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB 4 — GEOSPATIAL CHECKS
+    ════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="tab-geospatial">
+      <div class="section-head">
+        <div class="section-title">Geospatial Distribution</div>
+        <div class="section-actions">
+          <select id="geoLGAFilter" class="form-select" onchange="filterMapPoints()">
+            <option value="">All LGAs</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="data-card">
+        <div class="data-card-head">
+          <div class="data-card-title">
+            <i class="bi bi-pin-map-fill"></i>
+            Submission GPS Points — Sokoto State
+          </div>
+          <div class="data-card-actions">
+            <span id="mapPointCount" style="font-size:12px;color:#64748b"></span>
+          </div>
+        </div>
+        <div id="coverageMap" style="height:560px"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB 5 — VALIDATORS
+    ════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="tab-validators">
+      <div class="section-head">
+        <div class="section-title">Validator Review Records</div>
+        <div class="section-actions">
+          <select id="valLGAFilter" class="form-select" onchange="loadValidators(1)">
+            <option value="">All LGAs</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="data-card">
+        <div class="table-container table-container-lg">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Research Assistant</th><th>LGA</th><th>Ward</th>
+                <th>Community</th><th>Head of HH</th><th>Gender</th>
+                <th>Children (Name &amp; Age / Sex)</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="validatorTableBody">
+              <tr><td colspan="8" class="loading-cell">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-bar" id="validatorPagination">
+          <span id="valPagInfo"></span>
+          <div class="pag-controls" id="valPagControls"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Loading Overlay (sync) -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none">
+  <div class="loading-spinner">
+    <i class="bi bi-arrow-repeat spinning"></i>
+    <span>Syncing data from KoboToolbox…</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/coverage.js"></script>
+</body>
+</html>
